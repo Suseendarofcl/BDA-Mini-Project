@@ -1,0 +1,10 @@
+pyspark==3.5.9
+setuptools
+requests
+zstandard
+pandas
+pyarrow
+statsmodels
+fastapi
+uvicorn
+yfinance

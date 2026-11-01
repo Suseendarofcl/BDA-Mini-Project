@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fund Risk Analytics</title>
+<style>
+  @font-face { font-family: "Chakra Petch"; font-weight: 600; font-display: swap; src: url("/static/fonts/chakra-petch-latin-600-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Chakra Petch"; font-weight: 700; font-display: swap; src: url("/static/fonts/chakra-petch-latin-700-normal.woff2") format("woff2"); }
+  :root {
+    --bg: #060A1C; --text: #E9EDFF; --muted: #93A0C9; --line: rgba(139, 156, 255, .18);
+    --glass: rgba(255, 255, 255, .045); --glass2: rgba(255, 255, 255, .08);
+    --cyan: #3DE0FF; --violet: #8F7BFF; --mint: #3DFFB0; --coral: #FF6B81; --amber: #FFC857;
+    --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --body: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  body { margin: 0; color: var(--text); font: 16px/1.55 var(--body); font-variant-numeric: tabular-nums; background: var(--bg);
+    background-image:
+      radial-gradient(900px 520px at 8% -8%, rgba(143, 123, 255, .28), transparent 62%),
+      radial-gradient(820px 520px at 96% 4%, rgba(61, 224, 255, .20), transparent 60%),
+      radial-gradient(900px 700px at 50% 108%, rgba(61, 255, 176, .10), transparent 60%),
+      linear-gradient(rgba(139, 156, 255, .055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139, 156, 255, .055) 1px, transparent 1px);
+    background-size: auto, auto, auto, 46px 46px, 46px 46px; background-attachment: fixed; min-height: 100vh; }
+  button, select, input { font: inherit; color: inherit; }
+  select option { background: #0F1740; color: var(--text); }
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 6px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+  nav { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(6, 10, 28, .72); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; gap: 8px; height: 64px; }
+  .logo { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: .5px; margin-right: auto; display: flex; align-items: center; gap: 10px; }
+  .logo i { width: 26px; height: 26px; border-radius: 8px; background: conic-gradient(from 210deg, var(--cyan), var(--violet), var(--mint), var(--cyan)); box-shadow: 0 0 18px rgba(61, 224, 255, .55); }
+  nav a { color: var(--muted); text-decoration: none; font-size: 15px; padding: 7px 14px; border-radius: 999px; border: 1px solid transparent; }
+  nav a:hover { color: var(--text); border-color: var(--line); background: var(--glass); }
+  .live { font-size: 13px; color: var(--mint); display: flex; align-items: center; gap: 7px; margin-left: 10px; }
+  .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 10px var(--mint); }
+
+  .hero { padding: 56px 0 26px; }
+  .tag { display: inline-block; font-size: 14px; color: var(--cyan); border: 1px solid rgba(61, 224, 255, .4); border-radius: 999px; padding: 4px 14px; margin-bottom: 18px; background: rgba(61, 224, 255, .07); }
+  .say { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 3.5vw, 42px); line-height: 1.38; margin: 0; max-width: 24em; }
+  .say input, .say select { font-family: var(--display); font-weight: 600; font-size: .9em; color: var(--cyan); background: rgba(61, 224, 255, .08); border: 1px solid rgba(61, 224, 255, .45); border-radius: 10px; padding: 2px 10px; }
+  .say input { width: 5.4em; }
+  .say select { max-width: 12.5em; }
+  .say output { display: block; font-size: clamp(46px, 7.4vw, 92px); line-height: 1.08; font-weight: 700; margin: 10px 0 4px;
+    background: linear-gradient(92deg, var(--mint), var(--cyan) 55%, var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 26px rgba(61, 255, 176, .28)); }
+  .sub { color: var(--muted); margin: 6px 0 0; max-width: 46em; font-size: 17px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .panel { background: var(--glass); border: 1px solid var(--line); border-radius: 18px; padding: 22px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-x: auto; }
+  .chartbox { position: relative; height: 340px; }
+  .heroChart { margin-top: 26px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 18px; }
+  .tile { background: linear-gradient(160deg, var(--glass2), var(--glass)); border: 1px solid var(--line); border-radius: 16px; padding: 18px; position: relative; overflow: hidden; }
+  .tile::after { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--c, var(--cyan)); box-shadow: 0 0 18px var(--c, var(--cyan)); }
+  .tile small { color: var(--muted); font-size: 14px; display: block; }
+  .tile b { font-family: var(--display); font-size: 28px; font-weight: 700; display: block; line-height: 1.2; margin: 4px 0 2px; color: var(--c, var(--cyan)); }
+  .tile span { font-size: 14px; color: var(--text); }
+
+  section { padding: 56px 0 6px; }
+  h2 { font-family: var(--display); font-weight: 700; font-size: 31px; line-height: 1.2; margin: 0 0 6px; }
+  .lede { color: var(--muted); margin: 0 0 8px; max-width: 46em; font-size: 17px; }
+  .how { display: inline-flex; gap: 9px; align-items: baseline; margin: 6px 0 20px; padding: 8px 14px; border-radius: 12px; background: rgba(143, 123, 255, .10); border: 1px solid rgba(143, 123, 255, .3); font-size: 15px; max-width: 54em; }
+  .how strong { color: var(--violet); white-space: nowrap; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .two > * { min-width: 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--glass); }
+  .seg button { border: 0; background: none; padding: 8px 15px; cursor: pointer; white-space: nowrap; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: linear-gradient(120deg, var(--cyan), var(--violet)); color: #05081A; font-weight: 600; }
+  select.plain { border: 1px solid var(--line); background: var(--glass); border-radius: 12px; padding: 8px 12px; }
+  h3 { font-family: var(--display); font-weight: 600; font-size: 18px; margin: 0 0 12px; }
+
+  .rank { list-style: none; margin: 0; padding: 0; }
+  .rank li { display: grid; grid-template-columns: 30px minmax(150px, 290px) 1fr 66px; gap: 12px; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(139, 156, 255, .09); }
+  .rank li:last-child { border-bottom: 0; }
+  .rank .n { font-family: var(--display); color: var(--muted); font-size: 14px; text-align: center; border-radius: 8px; padding: 1px 0; }
+  .rank li:nth-child(-n+3) .n { color: #05081A; background: linear-gradient(120deg, var(--mint), var(--cyan)); font-weight: 700; }
+  .rank .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank .nm small { color: var(--muted); margin-left: 8px; }
+  .bar { display: block; height: 12px; border-radius: 6px; min-width: 3px; background: linear-gradient(90deg, var(--violet), var(--cyan) 60%, var(--mint)); box-shadow: 0 0 14px rgba(61, 224, 255, .35); }
+  .bar.neg { background: var(--coral); box-shadow: 0 0 14px rgba(255, 107, 129, .4); }
+  .rank .v { text-align: right; font-family: var(--display); font-weight: 600; }
+  .rank .v.neg { color: var(--coral); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid rgba(139, 156, 255, .09); }
+  th.num, td.num { text-align: right; white-space: nowrap; }
+  .scroll { max-height: 400px; overflow: auto; }
+  .chip { display: inline-block; padding: 1px 11px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid; }
+  .chip.Low { color: var(--mint); border-color: rgba(61, 255, 176, .5); background: rgba(61, 255, 176, .10); }
+  .chip.Medium { color: var(--amber); border-color: rgba(255, 200, 87, .5); background: rgba(255, 200, 87, .10); }
+  .chip.High { color: var(--coral); border-color: rgba(255, 107, 129, .55); background: rgba(255, 107, 129, .10); }
+  .chip.Moderate { color: var(--amber); border-color: rgba(255, 200, 87, .5); background: rgba(255, 200, 87, .10); }
+  .chip.fin { color: var(--violet); border-color: rgba(143, 123, 255, .55); background: rgba(143, 123, 255, .10); }
+  .chip.na { color: var(--muted); border-color: var(--line); }
+  .chip { white-space: nowrap; }
+  .wide { grid-template-columns: 1.45fr 1fr; }
+  #stockTable tbody tr { cursor: pointer; }
+  #stockTable tbody tr:hover, #stockTable tbody tr[aria-selected="true"] { background: rgba(61, 224, 255, .08); }
+  #stockTable td small { display: block; color: var(--muted); font-size: 13px; }
+  .pick { border: 0; background: none; padding: 0; cursor: pointer; text-align: left; font-weight: 600; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .facts div { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--glass); }
+  .facts small { display: block; color: var(--muted); font-size: 13px; }
+  .facts b { font-family: var(--display); font-size: 20px; }
+  [hidden] { display: none !important; }
+  .pbi { position: relative; width: 100%; aspect-ratio: 16 / 9.6; border-radius: 12px; overflow: hidden; background: #0A1130; border: 1px solid var(--line); }
+  .pbi iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .note a { color: var(--cyan); }
+  @media (max-width: 1180px) { .live { display: none; } nav a { padding: 7px 10px; } }
+  .meter { display: inline-block; width: 64px; height: 7px; background: rgba(255, 255, 255, .10); border-radius: 4px; vertical-align: middle; margin-right: 9px; overflow: hidden; }
+  .meter i { display: block; height: 100%; border-radius: 4px; }
+
+  .rings { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .ringcol { text-align: center; }
+  .ring { --p: 0; width: min(150px, 100%); aspect-ratio: 1; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(var(--mint) calc(var(--p) * 1%), rgba(255, 255, 255, .09) 0); box-shadow: 0 0 30px rgba(61, 255, 176, .16); position: relative; }
+  .ring::before { content: ""; position: absolute; inset: 11px; border-radius: 50%; background: #0A1130; }
+  .ring b { position: relative; font-family: var(--display); font-weight: 700; font-size: 28px; }
+  .ringcol strong { display: block; font-family: var(--display); font-size: 17px; }
+  .ringcol span { color: var(--muted); font-size: 14px; display: block; }
+  .range { position: relative; height: 8px; background: rgba(255, 255, 255, .10); border-radius: 4px; margin: 10px 6px 6px; }
+  .range i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, var(--violet), var(--cyan)); }
+  .range em { position: absolute; top: -5px; width: 3px; height: 18px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px #fff; }
+
+  .board { display: grid; gap: 10px; }
+  .mrow { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--glass); }
+  .mrow.win { border-color: rgba(61, 255, 176, .6); background: rgba(61, 255, 176, .07); box-shadow: 0 0 26px rgba(61, 255, 176, .14); }
+  .mrow .pos { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--muted); text-align: center; }
+  .mrow.win .pos { color: var(--mint); }
+  .mrow .nm { font-weight: 600; }
+  .mrow .nm small { display: block; color: var(--muted); font-weight: 400; font-size: 13.5px; }
+  .mrow .track { display: block; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .10); margin-top: 7px; overflow: hidden; }
+  .mrow .track i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--violet), var(--cyan)); }
+  .mrow.win .track i { background: linear-gradient(90deg, var(--cyan), var(--mint)); }
+  .verdict { font-size: 13px; font-weight: 600; padding: 3px 11px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .verdict.good { color: var(--mint); border-color: rgba(61, 255, 176, .5); }
+  .verdict.bad { color: var(--coral); border-color: rgba(255, 107, 129, .5); }
+  .verdict.base { color: var(--muted); border-color: var(--line); }
+
+  .note { color: var(--muted); font-size: 14px; margin: 14px 0 0; }
+  footer { margin-top: 64px; padding: 26px 0 44px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  footer button { border: 0; background: none; color: var(--cyan); text-decoration: underline; cursor: pointer; padding: 0; }
+
+  #gate { position: fixed; inset: 0; background: rgba(4, 7, 20, .82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; place-items: center; z-index: 20; padding: 20px; }
+  #gate.on { display: grid; }
+  #gate form { background: linear-gradient(160deg, #111A44, #0A1130); border: 1px solid rgba(61, 224, 255, .4); border-radius: 20px; padding: 30px; width: min(470px, 100%); box-shadow: 0 0 60px rgba(61, 224, 255, .18); }
+  #gate h3 { font-size: 26px; margin: 0 0 8px; }
+  #gate p { color: var(--muted); margin: 0; }
+  #gate code { color: var(--cyan); }
+  #gate input { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; margin: 16px 0 8px; background: rgba(255, 255, 255, .06); }
+  #gate .err { color: var(--coral); min-height: 1.5em; font-size: 14px; margin: 0 0 10px; }
+  .go { background: linear-gradient(120deg, var(--cyan), var(--violet)); color: #05081A; font-weight: 700; border: 0; border-radius: 12px; padding: 11px 20px; cursor: pointer; }
+
+  .rise { animation: rise .7s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 900px) {
+    .two { grid-template-columns: 1fr; }
+    .tiles { grid-template-columns: 1fr 1fr; }
+    nav a, .live { display: none; }
+    .rank li { grid-template-columns: 30px 1fr 60px; }
+    .rank li .bw { display: none; }
+    .rings { grid-template-columns: repeat(5, minmax(112px, 1fr)); }
+    .chartbox { height: 280px; }
+    .seg button { padding: 8px 10px; }
+    .facts { grid-template-columns: 1fr; }
+    #stockTable th:nth-child(3), #stockTable td:nth-child(3), #stockTable th:nth-child(4), #stockTable td:nth-child(4) { display: none; }
+    #stockTable th, #stockTable td { padding-left: 5px; padding-right: 5px; }
+    #stocks .panel { padding: 16px 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .rise { animation: none; } }
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="logo"><i></i>Fund Risk Analytics</div>
+  <a href="#top-funds">Top funds</a><a href="#risk">Risk</a><a href="#holding">Holding period</a><a href="#models">Models</a><a href="#stocks" id="navStocks" hidden>Stocks and debt</a><a href="#powerbi" id="navPbi" hidden>Power BI</a>
+  <span class="live" id="live"></span>
+</div></nav>
+
+<header class="hero"><div class="wrap rise">
+  <span class="tag">Try it: change the amount or the fund</span>
+  <p class="say">₹<input id="amt" type="text" inputmode="numeric" value="1,00,000" aria-label="Amount invested">
+    put into <select id="heroFund" aria-label="Fund"></select> ten years ago is worth
+    <output id="heroVal">…</output></p>
+  <p class="sub" id="heroSub"></p>
+  <div class="panel heroChart"><div class="chartbox"><canvas id="growth" aria-label="Growth of the investment over time"></canvas></div></div>
+  <div class="tiles" id="tiles"></div>
+</div></header>
+
+<main class="wrap">
+
+<section id="top-funds">
+  <h2>Top performing funds</h2>
+  <p class="lede">The 30 funds we study in depth, ranked by how much they grew each year.</p>
+  <p class="how"><strong>How to read it</strong><span>A longer bar means a higher yearly return. Switch the period to see who led over 1, 3, 5 or 10 years.</span></p>
+  <div class="controls">
+    <div class="seg" id="periodSeg" role="group" aria-label="Return period">
+      <button data-k="cagr_10y" aria-pressed="true">10 years</button><button data-k="cagr_5y">5 years</button>
+      <button data-k="cagr_3y">3 years</button><button data-k="return_1y">1 year</button>
+    </div>
+    <select id="catSel" class="plain" aria-label="Category"><option value="">All categories</option></select>
+  </div>
+  <div class="panel"><ol class="rank" id="rank"></ol></div>
+</section>
+
+<section id="risk">
+  <h2>Return against risk</h2>
+  <p class="lede">A high return is only half the story. This shows how bumpy the ride was for each fund.</p>
+  <p class="how"><strong>How to read it</strong><span>Each dot is a fund. Top-left is the best place to be: high return with small swings. The risk score runs from 0 (calmest of the 30) to 100 (bumpiest).</span></p>
+  <div class="two">
+    <div class="panel"><div class="chartbox" style="height:400px"><canvas id="scatter" aria-label="Volatility against 10-year return"></canvas></div></div>
+    <div class="panel"><div class="scroll"><table id="riskTable">
+      <thead><tr><th>Fund</th><th>Risk score</th><th>Band</th><th class="num">Worst fall</th></tr></thead><tbody></tbody>
+    </table></div></div>
+  </div>
+</section>
+
+<section id="holding">
+  <h2>Does holding longer pay?</h2>
+  <p class="lede">We took every month since 2013 as a starting point and checked how each holding period ended.</p>
+  <p class="how"><strong>How to read it</strong><span>Each ring is the share of periods that made money. The bar under it shows the yearly return: the white mark is the typical case, the coloured band runs from a poor outcome to a good one.</span></p>
+  <div class="controls"><select id="holdSel" class="plain" aria-label="Fund for holding-period results"><option value="">Average of all 30 funds</option></select></div>
+  <div class="panel">
+    <div class="rings" id="hold"></div>
+    <p class="note">Poor and good outcomes are the 10th and 90th percentiles. These are past results from a mostly rising market, not a promise.</p>
+  </div>
+</section>
+
+<section id="models">
+  <h2>Which model predicts better?</h2>
+  <p class="lede">Five models tried to predict each fund's return for the following month, tested on years they had never seen (2019 to 2026).</p>
+  <p class="how"><strong>How to read it</strong><span>A model is only useful if it beats the simple baseline, which just predicts each fund's past average. A lower error is better.</span></p>
+  <div class="two">
+    <div><div class="board" id="board"></div><p class="note" id="modelNote"></p></div>
+    <div class="panel"><div class="chartbox" style="height:380px"><canvas id="byYear" aria-label="Forecast error by test year"></canvas></div></div>
+  </div>
+  <div class="two" style="margin-top:22px">
+    <div class="panel">
+      <h3>Predicting next quarter's risk band</h3>
+      <div class="board" id="riskBoard"></div>
+      <p class="note">These models predict whether a fund will be in the calmest, middle or bumpiest third of its peers next quarter. A random guess would be right about 33% of the time.</p>
+    </div>
+    <div class="panel">
+      <h3 id="predTitle">Predicted risk band</h3>
+      <div class="scroll" style="max-height:330px"><table id="predTable">
+        <thead><tr><th>Fund</th><th>Now</th><th>Predicted</th><th class="num">Chance of High</th></tr></thead><tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<section id="stocks" hidden>
+  <h2>Stocks and company debt</h2>
+  <p class="lede">The companies inside the Nifty 50: how each share did, how risky it was and how much the company owes.</p>
+  <p class="how"><strong>How to read it</strong><span>Debt-to-equity compares what a company owes with what its owners have put in. Up to 0.5 is low, above 1 is high. Banks and lenders are marked separately, because borrowing is their business. Click a company to see its debt year by year.</span></p>
+  <div class="tiles" id="idxTiles" style="margin:0 0 20px"></div>
+  <div class="controls">
+    <div class="seg" id="stockSeg" role="group" aria-label="Sort companies">
+      <button data-k="ret" aria-pressed="true">Highest return</button><button data-k="debt">Most debt</button><button data-k="risk">Riskiest</button>
+    </div>
+    <select id="indSel" class="plain" aria-label="Industry"><option value="">All industries</option></select>
+  </div>
+  <div class="two wide">
+    <div class="panel"><div class="scroll" style="max-height:520px"><table id="stockTable">
+      <thead><tr><th>Company</th><th class="num">5-year return</th><th>Risk</th><th class="num">Debt-to-equity</th><th>Debt</th></tr></thead><tbody></tbody>
+    </table></div></div>
+    <div class="panel">
+      <h3 id="debtTitle">Debt year by year</h3>
+      <div class="chartbox" style="height:300px"><canvas id="debtChart" aria-label="Debt-to-equity by financial year"></canvas></div>
+      <div class="facts" id="debtFacts"></div>
+      <p class="note" id="debtNote"></p>
+    </div>
+  </div>
+</section>
+
+<section id="powerbi" hidden>
+  <h2>Power BI dashboard</h2>
+  <p class="lede" id="pbiLede">Our Power BI report, embedded in the site. It shows the same results, loaded from the same API.</p>
+  <p class="how"><strong>How to read it</strong><span id="pbiHow">Use the page arrows or page names at the bottom of the report to move between Home, Risk, Holding Period and Models. Click a bar or a slicer to filter the page.</span></p>
+  <div class="panel">
+    <div class="pbi"><iframe id="pbiFrame" title="Power BI dashboard" allowfullscreen></iframe></div>
+    <p class="note"><span id="pbiSign">If the report asks you to sign in, use the account that published it. </span><a id="pbiOpen" target="_blank" rel="noopener">Open the report in a new tab</a></p>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  <span id="asof"></span> Data: AMFI net asset values<span id="srcStocks" hidden>; share prices and company accounts from Yahoo Finance</span>. Built with Hadoop, Apache Spark and FastAPI.
+  This is a student project and not investment advice. <button id="changeKey" type="button">Change API key</button>
+</div></footer>
+
+<div id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <form id="gateForm">
+    <h3 id="gateTitle">Enter the API key</h3>
+    <p>The data is protected. Paste the key from the <code>.api_key</code> file in the project folder.</p>
+    <input id="keyInput" type="password" autocomplete="off" aria-label="API key" required>
+    <p class="err" id="gateErr" role="alert"></p>
+    <button class="go" type="submit">Open the dashboard</button>
+  </form>
+</div>
+
+<script src="/static/chart.umd.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const inr = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
+const short = s => s.replace(" - Direct - Growth", "").replace(/ Fund$/, "");
+const CAT_COLOR = { "Mid cap": "#8F7BFF", "Flexi cap": "#3DE0FF", "Large cap": "#FFC857", "Index": "#E9EDFF" };
+const BAND_COLOR = { Low: "#3DFFB0", Medium: "#FFC857", High: "#FF6B81" };
+const GRID = "rgba(139,156,255,.13)", NIFTY = 120716;
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let D = {}, charts = {}, shown = 0;
+
+async function get(path) {
+  const r = await fetch(path, { headers: { "X-API-Key": localStorage.getItem("apiKey") || "" } });
+  if (r.status === 401) throw new Error("401");
+  if (!r.ok) throw new Error(path + " returned " + r.status);
+  return r.json();
+}
+
+async function load() {
+  try {
+    const [funds, risk, hold, nav, mc, by, rmc, rp] = await Promise.all([
+      get("/funds"), get("/risk-scores"), get("/holding-period"), get("/nav-monthly"),
+      get("/models/comparison"), get("/models/by-year"), get("/risk-model/comparison"), get("/risk-prediction")]);
+    D = { funds, risk, hold, nav, mc, by, rmc, rp };
+    try {                                  // the stocks add-on is optional: the section stays hidden without it
+      const [stocks, debt, idx] = await Promise.all([get("/stocks"), get("/stocks/debt-history"), get("/indices")]);
+      Object.assign(D, { stocks, debt, idx });
+    } catch (e) { D.stocks = null; }
+    $("gate").classList.remove("on");
+    render();
+  } catch (e) {
+    $("gate").classList.add("on");
+    $("gateErr").textContent = !localStorage.getItem("apiKey") ? ""
+      : e.message === "401" ? "That key was rejected. Check the .api_key file and try again."
+      : "Could not load the data (" + e.message + "). Run the pipeline, then restart the API.";
+    $("keyInput").focus();
+  }
+}
+
+function render() {
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size = 13;
+  Chart.defaults.color = "#93A0C9";
+  Chart.defaults.plugins.tooltip.backgroundColor = "rgba(10,17,48,.95)";
+  Chart.defaults.plugins.tooltip.borderColor = "rgba(61,224,255,.45)";
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+  Chart.defaults.plugins.tooltip.padding = 10;
+  const asOf = new Date(D.funds[0].as_of_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  $("asof").textContent = "Figures as of " + asOf + ".";
+  $("live").textContent = "Data as of " + asOf;
+  const sel = $("heroFund");
+  const byRet = [...D.funds].sort((a, b) => b.cagr_10y - a.cagr_10y);
+  sel.innerHTML = byRet.map(f => `<option value="${f.scheme_code}">${short(f.short_name)}</option>`).join("");
+  sel.onchange = hero; $("amt").oninput = hero;
+  $("amt").onblur = () => { $("amt").value = amount().toLocaleString("en-IN"); };
+  hero();
+  tiles(byRet);
+  const cats = [...new Set(D.funds.map(f => f.category))].sort();
+  $("catSel").innerHTML = '<option value="">All categories</option>' + cats.map(c => `<option>${c}</option>`).join("");
+  $("catSel").onchange = rank;
+  $("periodSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return;
+    [...$("periodSeg").children].forEach(x => x.setAttribute("aria-pressed", x === b)); rank(); };
+  rank();
+  riskSection(); holdSection(); modelSection(); stockSection(); powerBI();
+}
+
+const amount = () => Math.max(0, parseInt($("amt").value.replace(/[^\d]/g, ""), 10) || 0);
+function series(code) { return D.nav.filter(r => r.scheme_code === code).sort((a, b) => a.date < b.date ? -1 : 1); }
+
+function countTo(el, to) {             // animate the big number when it changes
+  if (calm) { el.textContent = inr(to); shown = to; return; }
+  const from = shown, t0 = performance.now(), dur = 650; shown = to;
+  const step = t => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = inr(from + (to - from) * e); if (k < 1 && shown === to) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+function hero() {
+  const code = +$("heroFund").value, amt = amount();
+  const f = D.funds.find(x => x.scheme_code === code), nf = D.funds.find(x => x.scheme_code === NIFTY);
+  // value of the investment at each month end = amount x NAV / NAV ten years ago
+  const start = (() => { const d = new Date(f.as_of_date); d.setFullYear(d.getFullYear() - 10); return d.toISOString().slice(0, 10); })();
+  const grow = (fund, rows) => { const base = fund.nav_last / (fund.value_of_1_lakh_10y / 100000);
+    return [amt, ...rows.filter(r => r.date > start).map(r => amt * r.nav / base)]; };
+  const s = series(code), n = series(NIFTY);
+  const labels = [start, ...s.filter(r => r.date > start).map(r => r.date)];
+  const end = amt * f.value_of_1_lakh_10y / 100000, nEnd = amt * nf.value_of_1_lakh_10y / 100000;
+  countTo($("heroVal"), end);
+  const times = (f.value_of_1_lakh_10y / 100000).toFixed(1);
+  $("heroSub").innerHTML = code === NIFTY
+    ? `That is <b>${times} times</b> the money. Along the way its worst fall from a peak was <b>${pct(-f.max_drawdown, 0)}</b>.`
+    : `That is <b>${times} times</b> the money. The same amount in a Nifty 50 index fund would be <b>${inr(nEnd)}</b>. Along the way this fund's worst fall from a peak was <b>${pct(-f.max_drawdown, 0)}</b>.`;
+  const ctx = $("growth").getContext("2d"), g = ctx.createLinearGradient(0, 0, 0, 340);
+  g.addColorStop(0, "rgba(61,255,176,.38)"); g.addColorStop(1, "rgba(61,224,255,0)");
+  const data = { labels, datasets: [
+    { label: short(f.short_name), data: grow(f, s), borderColor: "#3DFFB0", backgroundColor: g, fill: true, borderWidth: 2.5, pointRadius: 0, tension: .2 },
+    ...(code === NIFTY ? [] : [{ label: "Nifty 50 index fund", data: grow(nf, n), borderColor: "#8F7BFF", borderDash: [6, 5], borderWidth: 2, pointRadius: 0, tension: .2 }]) ] };
+  if (charts.growth) { charts.growth.data = data; charts.growth.update(); return; }
+  charts.growth = new Chart($("growth"), { type: "line", data, options: {
+    maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+    plugins: { legend: { align: "start", labels: { boxWidth: 18, boxHeight: 2, color: "#E9EDFF" } },
+      tooltip: { callbacks: { title: i => new Date(i[0].label).toLocaleDateString("en-IN", { month: "short", year: "numeric" }), label: c => c.dataset.label + ": " + inr(c.parsed.y) } } },
+    scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0,
+        callback(v) { const l = this.getLabelForValue(v); if (l.slice(5, 7) !== "01") return null; return this.chart.width < 560 && +l.slice(0, 4) % 2 ? null : l.slice(0, 4); } } },
+      y: { grid: { color: GRID }, border: { display: false }, ticks: { callback: v => inr(v) } } } } });
+}
+
+function tiles(byRet) {
+  const best = byRet[0], calmest = [...D.risk].sort((a, b) => a.risk_score_curated - b.risk_score_curated)[0];
+  const five = D.hold.filter(h => h.holding_years === 5), p5 = five.reduce((s, h) => s + h.pct_windows_positive, 0) / five.length;
+  const top = D.mc[0];
+  const t = [
+    ["Best 10-year return", pct(best.cagr_10y) + " a year", short(best.short_name), "var(--mint)"],
+    ["Calmest ride", "Risk score " + calmest.risk_score_curated.toFixed(0), short(calmest.short_name), "var(--cyan)"],
+    ["Held for 5 years", p5.toFixed(1) + "% gained", "of all 5-year periods made money", "var(--violet)"],
+    ["Best forecasting model", top.model.replace(" (baseline)", ""), top.rmse_vs_baseline_pct < 0 ? Math.abs(top.rmse_vs_baseline_pct).toFixed(1) + "% lower error than the baseline" : "no model beat the baseline", "var(--amber)"]];
+  $("tiles").innerHTML = t.map(x => `<div class="tile" style="--c:${x[3]}"><small>${x[0]}</small><b>${x[1]}</b><span>${x[2]}</span></div>`).join("");
+}
+
+function rank() {
+  const k = $("periodSeg").querySelector('[aria-pressed="true"]').dataset.k, cat = $("catSel").value;
+  const rows = D.funds.filter(f => (!cat || f.category === cat) && f[k] != null).sort((a, b) => b[k] - a[k]);
+  const max = Math.max(...rows.map(r => Math.abs(r[k])), 0.01);
+  $("rank").innerHTML = rows.map((f, i) => `<li><span class="n">${i + 1}</span>
+    <span class="nm" title="${f.short_name}">${short(f.short_name)}<small>${f.category}</small></span>
+    <span class="bw"><span class="bar ${f[k] < 0 ? "neg" : ""}" style="width:${Math.abs(f[k]) / max * 100}%"></span></span>
+    <span class="v ${f[k] < 0 ? "neg" : ""}">${pct(f[k])}</span></li>`).join("");
+}
+
+function riskSection() {
+  const cats = [...new Set(D.funds.map(f => f.category))];
+  if (charts.scatter) charts.scatter.destroy();
+  charts.scatter = new Chart($("scatter"), { type: "scatter",
+    data: { datasets: cats.map(c => ({ label: c, backgroundColor: CAT_COLOR[c] || "#888", borderColor: "rgba(6,10,28,.9)", borderWidth: 1.5, pointRadius: 7, pointHoverRadius: 10,
+      data: D.funds.filter(f => f.category === c).map(f => ({ x: f.volatility * 100, y: f.cagr_10y * 100, name: short(f.short_name) })) })) },
+    options: { maintainAspectRatio: false,
+      plugins: { legend: { align: "start", labels: { usePointStyle: true, boxWidth: 7, boxHeight: 7, color: "#E9EDFF" } },
+        tooltip: { callbacks: { label: c => `${c.raw.name}: return ${c.raw.y.toFixed(1)}%, swings ${c.raw.x.toFixed(1)}%` } } },
+      scales: { x: { title: { display: true, text: "Bumpier ride  →  (volatility, % a year)" }, grid: { color: GRID }, border: { display: false } },
+        y: { title: { display: true, text: "Higher return  →  (% a year over 10 years)" }, grid: { color: GRID }, border: { display: false } } } } });
+  const dd = Object.fromEntries(D.funds.map(f => [f.scheme_code, f.max_drawdown]));
+  $("riskTable").tBodies[0].innerHTML = [...D.risk].sort((a, b) => a.risk_score_curated - b.risk_score_curated).map(r =>
+    `<tr><td>${short(r.short_name)}</td>
+     <td style="white-space:nowrap"><span class="meter"><i style="width:${Math.max(r.risk_score_curated, 3)}%;background:${BAND_COLOR[r.risk_band_curated]}"></i></span>${r.risk_score_curated.toFixed(0)}</td>
+     <td><span class="chip ${r.risk_band_curated}">${r.risk_band_curated}</span></td>
+     <td class="num">${pct(dd[r.scheme_code], 0)}</td></tr>`).join("");
+}
+
+function holdSection() {
+  const names = [...new Map(D.hold.map(h => [h.scheme_code, h.short_name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  $("holdSel").innerHTML = '<option value="">Average of all 30 funds</option>' + names.map(([c, n]) => `<option value="${c}">${short(n)}</option>`).join("");
+  $("holdSel").onchange = drawHold; drawHold();
+}
+function drawHold() {
+  const code = $("holdSel").value, avg = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const yrs = [...new Set(D.hold.map(h => h.holding_years))].sort((a, b) => a - b);
+  const lo = -0.1, hi = 0.6, pos = v => Math.min(100, Math.max(0, (v - lo) / (hi - lo) * 100));
+  $("hold").innerHTML = yrs.map(y => {
+    const rows = D.hold.filter(h => h.holding_years === y && (!code || h.scheme_code === +code));
+    if (!rows.length) return "";
+    const p = avg(rows.map(r => r.pct_windows_positive)), med = avg(rows.map(r => r.median_cagr)),
+      p10 = avg(rows.map(r => r.cagr_p10)), p90 = avg(rows.map(r => r.cagr_p90));
+    return `<div class="ringcol"><div class="ring" style="--p:${p}" role="img" aria-label="${p.toFixed(0)} percent of ${y}-year periods made money"><b>${p.toFixed(p >= 99.95 ? 0 : 1)}%</b></div>
+      <strong>${y} year${y > 1 ? "s" : ""}</strong><span>made money</span>
+      <div class="range" title="Poor to good outcome"><i style="left:${pos(p10)}%;width:${Math.max(pos(p90) - pos(p10), 1.5)}%"></i><em style="left:calc(${pos(med)}% - 1px)"></em></div>
+      <span>${pct(med)} a year typically</span><span>${pct(p10)} to ${pct(p90)}</span></div>`; }).join("");
+}
+
+function modelSection() {
+  const worst = Math.max(...D.mc.map(m => m.rmse)), bestR = Math.min(...D.mc.map(m => m.rmse));
+  $("board").innerHTML = D.mc.map(m => { const base = m.model.includes("baseline"), good = m.rmse_vs_baseline_pct < 0;
+    const w = 35 + 65 * (worst - m.rmse) / Math.max(worst - bestR, 1e-9);      // longer track = lower error
+    return `<div class="mrow ${m.rank === 1 ? "win" : ""}"><span class="pos">${m.rank}</span>
+      <span class="nm">${m.model.replace(" (baseline)", "")}<small>Error ${m.rmse.toFixed(4)}, direction right ${m.directional_accuracy.toFixed(1)}% of the time</small>
+      <span class="track"><i style="width:${w}%"></i></span></span>
+      <span class="verdict ${base ? "base" : good ? "good" : "bad"}">${base ? "Baseline" : Math.abs(m.rmse_vs_baseline_pct).toFixed(1) + "% " + (good ? "better" : "worse")}</span></div>`; }).join("");
+  const beat = D.mc.filter(m => m.rmse_vs_baseline_pct < 0).map(m => m.model);
+  $("modelNote").textContent = (beat.length ? "Only " + beat.join(" and ") + (beat.length > 1 ? " beat" : " beats") : "No model beats")
+    + " the baseline. Each model made " + D.mc[0].n_predictions.toLocaleString("en-IN") + " predictions. A longer bar means a lower error.";
+  const years = [...new Set(D.by.map(r => r.target_year))].sort(), pal = ["#3DFFB0", "#93A0C9", "#3DE0FF", "#FFC857", "#FF6B81"];
+  if (charts.byYear) charts.byYear.destroy();
+  charts.byYear = new Chart($("byYear"), { type: "line",
+    data: { labels: years, datasets: D.mc.map((m, i) => ({ label: m.model.replace(" (baseline)", ""), borderColor: pal[i % 5], backgroundColor: pal[i % 5],
+      borderWidth: m.rank === 1 ? 3.5 : 1.75, pointRadius: m.rank === 1 ? 4 : 2.5, borderDash: m.model.includes("baseline") ? [6, 5] : [], tension: 0,
+      data: years.map(y => (D.by.find(r => r.model === m.model && r.target_year === y) || {}).rmse) })) },
+    options: { maintainAspectRatio: false,
+      plugins: { legend: { align: "start", labels: { boxWidth: 18, boxHeight: 2, color: "#E9EDFF" } },
+        title: { display: true, text: "Error in each test year (the 2020 spike is the Covid crash)", align: "start", color: "#E9EDFF", font: { weight: "600", size: 14 } } },
+      scales: { x: { grid: { display: false } }, y: { grid: { color: GRID }, border: { display: false }, title: { display: true, text: "Error (RMSE)" } } } } });
+  $("riskBoard").innerHTML = D.rmc.map(m => { const base = m.model.includes("baseline");
+    return `<div class="mrow ${m.rank === 1 ? "win" : ""}"><span class="pos">${m.rank}</span>
+      <span class="nm">${m.model.replace(" (baseline)", "")}<small>${base ? "Assumes next quarter looks like this one" : "Trained in Spark MLlib"}</small>
+      <span class="track"><i style="width:${m.accuracy}%"></i></span></span>
+      <span class="verdict ${base ? "base" : "good"}">${m.accuracy.toFixed(1)}% right</span></div>`; }).join("");
+  const q = new Date(D.rp[0].predicted_for_quarter);
+  $("predTitle").textContent = "Predicted risk band from " + q.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  $("predTable").tBodies[0].innerHTML = D.rp.map(r => `<tr><td>${short(r.short_name)}</td>
+    <td><span class="chip ${r.current_band}">${r.current_band}</span></td><td><span class="chip ${r.predicted_band}">${r.predicted_band}</span></td>
+    <td class="num"><span class="meter"><i style="width:${r.prob_high * 100}%;background:${BAND_COLOR.High}"></i></span>${pct(r.prob_high, 0)}</td></tr>`).join("");
+}
+
+const DEBT_COLOR = { Low: "#3DFFB0", Moderate: "#FFC857", High: "#FF6B81" };
+const debtBand = de => de <= 0.5 ? "Low" : de <= 1 ? "Moderate" : "High";
+const debtChip = s => s.debt_level === "Financial company" ? '<span class="chip fin" title="Borrowing is the business of banks and lenders, so their ratio is not judged">Bank / lender</span>'
+  : s.debt_level === "No data" ? '<span class="chip na">No data</span>' : `<span class="chip ${s.debt_level}">${s.debt_level}</span>`;
+const optPct = v => v == null ? "–" : pct(v);
+
+function stockSection() {
+  const on = !!(D.stocks && D.stocks.length);
+  $("stocks").hidden = $("navStocks").hidden = $("srcStocks").hidden = !on;
+  if (!on) return;
+  const nonFin = D.stocks.filter(s => !s.is_financial && s.debt_to_equity != null), high = nonFin.filter(s => s.debt_level === "High");
+  const best = [...D.stocks].filter(s => s.cagr_5y != null).sort((a, b) => b.cagr_5y - a.cagr_5y)[0];
+  const t = (D.idx || []).map((x, i) => [x.symbol === "NIFTY 50" ? "Nifty 50 index" : "Sensex index",
+    x.cagr_10y != null ? pct(x.cagr_10y) + " a year" : optPct(x.cagr_5y) + " a year",
+    x.cagr_10y != null ? "over 10 years: ₹1 lakh became " + inr(x.value_of_1_lakh_10y) : "over 5 years", i ? "var(--violet)" : "var(--cyan)"]);
+  if (best) t.push(["Best share over 5 years", pct(best.cagr_5y) + " a year", best.company, "var(--mint)"]);
+  t.push(["Companies with high debt", high.length + " of " + nonFin.length, "non-financial companies owe more than their owners' money", "var(--coral)"]);
+  $("idxTiles").innerHTML = t.map(x => `<div class="tile" style="--c:${x[3]}"><small>${x[0]}</small><b>${x[1]}</b><span>${x[2]}</span></div>`).join("");
+  const inds = [...new Set(D.stocks.map(s => s.industry).filter(Boolean))].sort();
+  $("indSel").innerHTML = '<option value="">All industries</option>' + inds.map(c => `<option>${c.replace(/&/g, "&amp;")}</option>`).join("");
+  $("indSel").onchange = drawStocks;
+  $("stockSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return;
+    [...$("stockSeg").children].forEach(x => x.setAttribute("aria-pressed", x === b)); drawStocks(); };
+  $("stockTable").tBodies[0].onclick = e => { const tr = e.target.closest("tr"); if (tr) drawDebt(tr.dataset.s); };
+  D.pick = (high.sort((a, b) => b.debt_to_equity - a.debt_to_equity)[0] || nonFin[0] || D.stocks[0]).symbol;
+  drawStocks(); drawDebt(D.pick);
+}
+
+function drawStocks() {
+  const k = $("stockSeg").querySelector('[aria-pressed="true"]').dataset.k, ind = $("indSel").value;
+  const key = { ret: s => s.cagr_5y, risk: s => s.risk_score, debt: s => s.is_financial ? null : s.debt_to_equity }[k];
+  const rows = D.stocks.filter(s => !ind || s.industry === ind).sort((a, b) => (key(b) ?? -Infinity) - (key(a) ?? -Infinity));
+  $("stockTable").tBodies[0].innerHTML = rows.map(s => `<tr data-s="${s.symbol.replace(/&/g, "&amp;")}" aria-selected="${s.symbol === D.pick}">
+    <td><button class="pick" type="button">${s.company.replace(/ (Ltd\.?|Limited)$/i, "")}</button><small>${s.industry || ""}</small></td>
+    <td class="num" style="color:${s.cagr_5y < 0 ? "var(--coral)" : "inherit"}">${optPct(s.cagr_5y)}</td>
+    <td>${s.risk_band ? `<span class="chip ${s.risk_band}" title="Risk score ${s.risk_score.toFixed(0)} of 100">${s.risk_band}</span>` : '<span class="chip na" title="Listed for less than five years">Too new</span>'}</td>
+    <td class="num">${s.debt_to_equity == null ? "–" : s.debt_to_equity.toFixed(2)}</td><td>${debtChip(s)}</td></tr>`).join("");
+}
+
+function drawDebt(sym) {
+  D.pick = sym;
+  [...$("stockTable").tBodies[0].rows].forEach(r => r.setAttribute("aria-selected", r.dataset.s === sym));
+  const s = D.stocks.find(x => x.symbol === sym), rows = D.debt.filter(r => r.symbol === sym && r.debt_to_equity != null).sort((a, b) => a.fiscal_year - b.fiscal_year);
+  $("debtTitle").textContent = s.company.replace(/ (Ltd\.?|Limited)$/i, "") + ": debt year by year";
+  if (charts.debt) charts.debt.destroy();
+  charts.debt = new Chart($("debtChart"), { type: "bar",
+    data: { labels: rows.map(r => "FY " + r.fiscal_year), datasets: [{ label: "Debt-to-equity", data: rows.map(r => r.debt_to_equity), borderRadius: 8, maxBarThickness: 70,
+      backgroundColor: rows.map(r => s.is_financial ? "#8F7BFF" : DEBT_COLOR[debtBand(r.debt_to_equity)]) }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: c => "Debt-to-equity " + c.parsed.y.toFixed(2) + (rows[c.dataIndex].total_debt_cr != null ? ", debt ₹" + Math.round(rows[c.dataIndex].total_debt_cr).toLocaleString("en-IN") + " crore" : "") } } },
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: GRID }, border: { display: false }, title: { display: true, text: "Debt for every ₹1 of owners' money" } } } } });
+  const last = rows[rows.length - 1], ic = s.interest_coverage;
+  $("debtFacts").innerHTML = !last ? "" : [
+    ["Total debt, FY " + last.fiscal_year, last.total_debt_cr == null ? "–" : "₹" + Math.round(last.total_debt_cr).toLocaleString("en-IN") + " cr"],
+    ["Debt-to-equity", last.debt_to_equity.toFixed(2)],
+    ["Interest cover", s.is_financial || ic == null ? "–" : ic.toFixed(1) + " times"]].map(f => `<div><small>${f[0]}</small><b>${f[1]}</b></div>`).join("");
+  $("debtNote").textContent = !rows.length ? "Yahoo Finance has no debt figures for this company."
+    : s.is_financial ? "This is a bank or lender. Its borrowings are the raw material of its business, so the ratio is shown but not judged, and it is left out of the risk score."
+    : (s.de_change == null || rows.length < 2 ? "" : Math.abs(s.de_change) < 0.02 ? "Debt has stayed about the same against equity since FY " + rows[0].fiscal_year + ". "
+        : "Debt has " + (s.de_change > 0 ? "risen" : "fallen") + " against equity since FY " + rows[0].fiscal_year + ". ")
+      + (ic == null ? "" : ic < 3 ? "Operating profit covers the interest bill only " + ic.toFixed(1) + " times, which is thin." : "Operating profit covers the interest bill " + ic.toFixed(1) + " times.");
+}
+
+// Power BI: shows the live report from the link in web/powerbi_link.txt,
+// or else the PDF export saved as web/powerbi_report.pdf; with neither, the section stays hidden
+async function powerBI() {
+  if ($("pbiFrame").getAttribute("src")) return;
+  let url = null, pdf = false;
+  try {
+    const r = await fetch("/static/powerbi_link.txt", { cache: "no-store" });
+    if (r.ok) {
+      const txt = (await r.text()).trim(), m = txt.match(/src="([^"]+)"/);   // the link or the whole <iframe> code
+      const u = (m ? m[1] : txt).replace(/&amp;/g, "&").trim();
+      if (/^https:\/\/app\.powerbi\.com\//.test(u)) url = u;
+    }
+  } catch (e) { /* no link file */ }
+  if (!url) {
+    try {
+      const r = await fetch("/static/powerbi_report.pdf", { method: "HEAD", cache: "no-store" });
+      if (r.ok) { url = "/static/powerbi_report.pdf"; pdf = true; }
+    } catch (e) { /* no PDF either */ }
+  }
+  if (!url) return;
+  if (pdf) {
+    $("pbiLede").textContent = "Our Power BI report, exported from Power BI and shown here page by page.";
+    $("pbiHow").textContent = "Scroll inside the report to move through its pages: Home, Risk, Holding Period and Models. To click and filter, open the report in Power BI.";
+    $("pbiSign").hidden = true;
+  }
+  $("pbiFrame").src = pdf ? url + "#view=FitH&navpanes=0" : url;
+  $("pbiOpen").href = url;
+  $("powerbi").hidden = $("navPbi").hidden = false;
+}
+
+$("gateForm").onsubmit = e => { e.preventDefault(); localStorage.setItem("apiKey", $("keyInput").value.trim()); load(); };
+$("changeKey").onclick = () => { $("keyInput").value = ""; $("gateErr").textContent = ""; $("gate").classList.add("on"); $("keyInput").focus(); };
+load();
+</script>
+</body>
+</html>
